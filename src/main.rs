@@ -4,7 +4,8 @@ mod elevator;
 
 use elevator::{
     Elevator,
-    Floor
+    Floor,
+    Order
 };
 use rand::Rng;
 
@@ -37,7 +38,10 @@ fn main() {
 
     for _ in 0..48 {
         let floor_num = rand::thread_rng().gen_range(0, floors.len());
-        elevator.queue_floor(floors[floor_num]);
+        let passengers = rand::thread_rng().gen_range(0, 8);
+        let floor = floors[floor_num];
+        let order = Order::new(floor, passengers);
+        elevator.queue_order(order);
         elevator.debug();
     }
 

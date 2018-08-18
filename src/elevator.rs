@@ -56,25 +56,25 @@ impl Order {
 
 #[derive(Debug)]
 pub struct Elevator {
-  cur_dir_queue: Vec<Floor>,
-  next_dir_queue: Vec<Floor>,
+  cur_dir_queue: Vec<Order>,
+  next_dir_queue: Vec<Order>,
   pub direction: ElevatorDirection,
   pub current_floor: Floor
 }
 
-fn add_to_queue(queue: &mut Vec<Floor>, floor: Floor) {
-  if queue.contains(&floor) {
+fn add_to_queue(queue: &mut Vec<Order>, order: Order) {
+  if queue.iter().any(|ref queued| queued.floor == order.floor) {
     return;
   }
 
-  queue.push(floor);
+  queue.push(order);
 }
 
-fn sort_queue(queue: &mut Vec<Floor>, direction: ElevatorDirection) {
+fn sort_queue(queue: &mut Vec<Order>, direction: ElevatorDirection) {
   if direction == ElevatorDirection::Down {
-    queue.sort_by(|a, b| b.cmp(a));
+    queue.sort_by(|a, b| b.floor.cmp(&a.floor));
   } else {
-    queue.sort();
+    queue.sort_by(|a, b| a.floor.cmp(&b.floor));
   }
 }
 
@@ -97,7 +97,9 @@ impl Elevator {
     self.current_floor = floor;
   }
 
-  pub fn queue_floor(&mut self, floor: Floor) {
+  pub fn queue_order(&mut self, order: Order) {
+    let floor = order.floor;
+
     if self.direction == ElevatorDirection::Stopped {
       if floor < self.current_floor {
         self.set_direction(ElevatorDirection::Down)
@@ -109,12 +111,12 @@ impl Elevator {
     if (floor < self.current_floor && self.direction == ElevatorDirection::Down) ||
        (floor > self.current_floor && self.direction == ElevatorDirection::Up) {
       println!("Added floor {} to active queue", floor.num);
-      add_to_queue(&mut self.cur_dir_queue, floor);
+      add_to_queue(&mut self.cur_dir_queue, order);
       sort_queue(&mut self.cur_dir_queue, self.direction);
     } else if (floor < self.current_floor && self.direction == ElevatorDirection::Up) ||
        (floor > self.current_floor && self.direction == ElevatorDirection::Down) {
       println!("Added floor {} to next queue", floor.num);
-      add_to_queue(&mut self.next_dir_queue, floor);
+      add_to_queue(&mut self.next_dir_queue, order);
     }
   }
 
@@ -129,43 +131,42 @@ impl Elevator {
 }
 
 impl Iterator for Elevator {
-    type Item = Floor;
+  type Item = Floor;
 
-    // next() is the only required method
-    fn next(&mut self) -> Option<Floor> {
-      if self.cur_dir_queue.is_empty() {
-        println!("Swapping directional queues");
-        self.cur_dir_queue.append(&mut self.next_dir_queue);
+  fn next(&mut self) -> Option<Floor> {
+    if self.cur_dir_queue.is_empty() {
+      println!("Swapping directional queues");
+      self.cur_dir_queue.append(&mut self.next_dir_queue);
 
-        let next_direction = match self.direction {
-          ElevatorDirection::Up => ElevatorDirection::Down,
-          ElevatorDirection::Down => ElevatorDirection::Up,
-          ElevatorDirection::Stopped => {
-            if self.cur_dir_queue.is_empty() {
-              ElevatorDirection::Stopped
-            } else if self.cur_dir_queue[0] > self.current_floor {
-              ElevatorDirection::Up
-            } else if self.cur_dir_queue[0] < self.current_floor {
-              ElevatorDirection::Down
-            } else {
-              ElevatorDirection::Stopped
-            }
+      let next_direction = match self.direction {
+        ElevatorDirection::Up => ElevatorDirection::Down,
+        ElevatorDirection::Down => ElevatorDirection::Up,
+        ElevatorDirection::Stopped => {
+          if self.cur_dir_queue.is_empty() {
+            ElevatorDirection::Stopped
+          } else if self.cur_dir_queue[0].floor > self.current_floor {
+            ElevatorDirection::Up
+          } else if self.cur_dir_queue[0].floor < self.current_floor {
+            ElevatorDirection::Down
+          } else {
+            ElevatorDirection::Stopped
           }
-        };
+        }
+      };
 
-        self.set_direction(next_direction);
-        sort_queue(&mut self.cur_dir_queue, self.direction);
-      }
-
-      if !self.cur_dir_queue.is_empty() {
-        let next_floor = self.cur_dir_queue.remove(0);
-        self.go_to_floor(next_floor);
-        Some(next_floor)
-      } else if self.all_queues_emptied() {
-        self.set_direction(ElevatorDirection::Stopped);
-        None
-      } else {
-        self.next()
-      }
+      self.set_direction(next_direction);
+      sort_queue(&mut self.cur_dir_queue, self.direction);
     }
+
+    if !self.cur_dir_queue.is_empty() {
+      let next_floor = self.cur_dir_queue.remove(0).floor;
+      self.go_to_floor(next_floor);
+      Some(next_floor)
+    } else if self.all_queues_emptied() {
+      self.set_direction(ElevatorDirection::Stopped);
+      None
+    } else {
+      self.next()
+    }
+  }
 }
