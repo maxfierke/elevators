@@ -55,11 +55,12 @@ impl Order {
 }
 
 #[derive(Debug)]
-pub struct Elevator {
+pub struct Elevator<'a> {
   cur_dir_queue: Vec<Order>,
   next_dir_queue: Vec<Order>,
   pub direction: ElevatorDirection,
-  pub current_floor: Floor
+  pub current_floor: Floor,
+  floors: &'a Vec<Floor>
 }
 
 fn add_to_queue(queue: &mut Vec<Order>, order: Order) {
@@ -78,18 +79,15 @@ fn sort_queue(queue: &mut Vec<Order>, direction: ElevatorDirection) {
   }
 }
 
-impl Elevator {
-  pub fn new(floors: &Vec<Floor>, current_floor: Floor) -> Elevator {
+impl<'a> Elevator<'a> {
+  pub fn new(floors: &'a Vec<Floor>, current_floor: Floor) -> Elevator {
     Elevator {
       cur_dir_queue: Vec::with_capacity(floors.len()),
       next_dir_queue: Vec::with_capacity(floors.len()),
       direction: ElevatorDirection::Stopped,
-      current_floor
+      current_floor,
+      floors
     }
-  }
-
-  pub fn debug(&self) {
-    println!("{:?}", self);
   }
 
   pub fn go_to_floor(&mut self, floor: Floor) {
@@ -130,7 +128,7 @@ impl Elevator {
   }
 }
 
-impl Iterator for Elevator {
+impl<'a> Iterator for Elevator<'a> {
   type Item = Floor;
 
   fn next(&mut self) -> Option<Floor> {
