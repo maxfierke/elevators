@@ -9,6 +9,14 @@ use elevator::{
 };
 use rand::Rng;
 
+fn gen_random_order(floors: &Vec<Floor>) -> Order {
+    let floor_num = rand::thread_rng().gen_range(0, floors.len());
+    let passengers = rand::thread_rng().gen_range(0, 8);
+    let floor = floors[floor_num];
+
+    Order::new(floor, passengers)
+}
+
 fn main() {
     let floors = vec![
         Floor::new(-5),
@@ -37,12 +45,8 @@ fn main() {
     elevator.go_to_floor(floors[start_num]);
 
     for _ in 0..48 {
-        let floor_num = rand::thread_rng().gen_range(0, floors.len());
-        let passengers = rand::thread_rng().gen_range(0, 8);
-        let floor = floors[floor_num];
-        let order = Order::new(floor, passengers);
+        let order = gen_random_order(&floors);
         elevator.queue_order(order);
-        elevator.debug();
     }
 
     for floor in elevator {
