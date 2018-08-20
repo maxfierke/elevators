@@ -1,24 +1,18 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate rand;
 
 mod elevator;
 
 use elevator::{
-    Elevator,
+    Elevators,
     Floor,
     Order
 };
 use rand::Rng;
 
-fn gen_random_order(floors: &Vec<Floor>) -> Order {
-    let floor_num = rand::thread_rng().gen_range(0, floors.len());
-    let passengers = rand::thread_rng().gen_range(0, 8);
-    let floor = floors[floor_num];
-
-    Order::new(floor, passengers)
-}
-
-fn main() {
-    let floors = vec![
+lazy_static! {
+    static ref FLOORS: Vec<Floor> = vec![
         Floor::new(-5),
         Floor::new(-4),
         Floor::new(-3),
@@ -38,18 +32,25 @@ fn main() {
         Floor::new(11),
         Floor::new(12)
     ];
+}
 
-    let mut elevator = Elevator::new(&floors, floors[1]);
+fn gen_random_order(floors: &Vec<Floor>) -> Order {
+    let floor_num = rand::thread_rng().gen_range(0, floors.len());
+    let passengers = rand::thread_rng().gen_range(0, 8);
+    let floor = floors[floor_num];
 
-    let start_num = rand::thread_rng().gen_range(0, floors.len());
-    elevator.go_to_floor(floors[start_num]);
+    Order::new(floor, passengers)
+}
+
+fn main() {
+    let start_num = rand::thread_rng().gen_range(0, FLOORS.len());
+    let start_floor = FLOORS[start_num];
+    let mut elevators = Elevators::new(1, start_floor, &FLOORS);
 
     for _ in 0..48 {
-        let order = gen_random_order(&floors);
-        elevator.queue_order(order);
+      let order = gen_random_order(&FLOORS);
+      elevators.submit_order(order);
     }
 
-    for floor in elevator {
-        println!("Opening on {}", floor.num);
-    }
+    elevators.wait()
 }

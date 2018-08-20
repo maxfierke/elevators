@@ -4,4 +4,5 @@ version = "0.1.0"
 authors = ["Max Fierke <max@maxfierke.com>"]
 
 [dependencies]
+lazy_static = "^1.1.0"
 rand = "^0.5"
